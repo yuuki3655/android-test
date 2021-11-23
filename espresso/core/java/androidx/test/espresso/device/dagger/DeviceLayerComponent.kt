@@ -17,6 +17,7 @@
 package androidx.test.espresso.device.dagger
 
 import androidx.test.espresso.device.context.ActionContext
+import androidx.test.espresso.device.controller.emulator.EmulatorConnection
 import androidx.test.platform.device.DeviceController
 import dagger.Component
 import javax.inject.Singleton
@@ -28,4 +29,6 @@ interface DeviceLayerComponent {
   fun actionContext(): ActionContext
 
   fun deviceController(): DeviceController
+
+  fun emulatorConnection(): EmulatorConnection
 }

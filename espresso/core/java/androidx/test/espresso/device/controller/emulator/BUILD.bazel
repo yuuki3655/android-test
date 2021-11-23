@@ -1,0 +1,37 @@
+#  Device controller
+
+load("@io_bazel_rules_kotlin//kotlin:android.bzl", "kt_android_library")
+
+licenses(["notice"])
+
+package(default_visibility = [
+    "//espresso/core/java/androidx/test/espresso/device:device_pkg",
+])
+
+kt_android_library(
+    name = "controller",
+    srcs = [
+        "DeviceController.kt",
+        "DeviceControllerOperationException.kt",
+        "DeviceMode.kt",
+        "UnsupportedDeviceOperationException.kt",
+    ],
+    deps = [
+        "//espresso/core/java/androidx/test/espresso:interface",
+    ],
+)
+
+kt_android_library(
+    name = "controller_impl",
+    srcs = [
+        "EmulatorController.kt",
+        "PhysicalDeviceController.kt",
+    ],
+    deps = [
+        ":controller",
+        "//android/emulator:emulator_controller_java_grpc",
+        "//android/emulator:emulator_controller_kt_proto",
+        "//espresso/core/java/androidx/test/espresso/device/action",
+        "//grpc:core_android",
+    ],
+)

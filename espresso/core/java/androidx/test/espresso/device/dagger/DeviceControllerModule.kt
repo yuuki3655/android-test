@@ -21,21 +21,29 @@ import androidx.test.espresso.device.context.InstrumentationTestActionContext
 import androidx.test.espresso.device.controller.DeviceControllerOperationException
 import androidx.test.espresso.device.controller.EmulatorController
 import androidx.test.espresso.device.controller.PhysicalDeviceController
+import androidx.test.espresso.device.controller.emulator.EmulatorConnection
+import androidx.test.espresso.device.controller.emulator.LocalEmulatorConnection
 import androidx.test.espresso.device.util.isTestDeviceAnEmulator
 import androidx.test.internal.platform.ServiceLoaderWrapper
+import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.platform.device.DeviceController
-import com.android.emulator.control.EmulatorControllerGrpc
 import dagger.Module
 import dagger.Provides
-import io.grpc.Channel
-import io.grpc.InsecureChannelCredentials
-import io.grpc.okhttp.OkHttpChannelBuilder
 import java.lang.reflect.Method
 import javax.inject.Singleton
 
 /** Dagger module for DeviceController. */
 @Module
 internal class DeviceControllerModule {
+
+  companion object {
+    private val EMULATOR_ADDRESS = "10.0.2.2"
+    private val ARGS_GRPC_PORT = "grpc.port"
+    private val ARGS_GRPC_TOKEN = "grpc.token"
+    private val ARGS_GRPC_KEY = "grpc.key"
+    private val ARGS_GRPC_CER = "grpc.cer"
+    private val ARGS_GRPC_CA = "grpc.ca"
+  }
 
   @Provides
   @Singleton
@@ -52,7 +60,8 @@ internal class DeviceControllerModule {
       )
     if (platformDeviceController == null) {
       if (isTestDeviceAnEmulator()) {
-        return EmulatorController(getEmulatorControllerStub())
+        val connection = provideEmulatorConnection()
+        return EmulatorController(connection.emulatorController())
       } else {
         return PhysicalDeviceController()
       }
@@ -61,7 +70,27 @@ internal class DeviceControllerModule {
     }
   }
 
-  private fun getEmulatorControllerStub(): EmulatorControllerGrpc.EmulatorControllerBlockingStub {
+  @Provides
+  @Singleton
+  fun provideEmulatorConnection(): EmulatorConnection {
+    val args = InstrumentationRegistry.getArguments()
+    var grpcPort = args.getInt(ARGS_GRPC_PORT)
+    if (grpcPort == 0) {
+      // Running in g3
+      grpcPort = getEmulatorGRPCPort()
+    }
+
+    return LocalEmulatorConnection(
+      EMULATOR_ADDRESS,
+      grpcPort,
+      args.getString(ARGS_GRPC_TOKEN, ""),
+      args.getString(ARGS_GRPC_CER, ""),
+      args.getString(ARGS_GRPC_KEY, ""),
+      args.getString(ARGS_GRPC_CA, "")
+    )
+  }
+
+  private fun getEmulatorGRPCPort(): Int {
     val clazz = Class.forName("android.os.SystemProperties")
     val getter: Method = clazz.getMethod("get", String::class.java)
     var gRpcPort = getter.invoke(clazz, "mdevx.grpc_port") as String
@@ -71,12 +100,7 @@ internal class DeviceControllerModule {
           " enabled on the emulator."
       )
     }
-    val port = gRpcPort.toInt()
-    val channel: Channel =
-      OkHttpChannelBuilder.forAddress("10.0.2.2", port, InsecureChannelCredentials.create()).build()
-    val emulatorControllerStub: EmulatorControllerGrpc.EmulatorControllerBlockingStub =
-      EmulatorControllerGrpc.newBlockingStub(channel)
-    return emulatorControllerStub
+    return gRpcPort.toInt()
   }
 
   private class EspressoDeviceControllerAdpater(
