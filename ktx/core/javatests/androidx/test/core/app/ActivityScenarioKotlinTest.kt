@@ -39,7 +39,7 @@ private fun lastLifeCycleTransition(activity: Activity): Stage {
 class ActivityScenarioKotlinTest {
   @Test
   fun basicUseCase() {
-    launchActivity<RecreationRecordingActivity>().use { scenario ->
+    launchActivityForResult<RecreationRecordingActivity>().use { scenario ->
       with(scenario) {
         assertThat(state).isEqualTo(State.RESUMED)
         onActivity {
