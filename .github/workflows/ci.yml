@@ -3,20 +3,13 @@ on:
   push:
     branches:
       - main
-      - 'axt_**_release_branch'
-
-  pull_request:
-    branches:
-      - main
-      - 'axt_**_release_branch'
 
 env:
   cache-version: v1
 
 jobs:
   build:
-    runs-on:
-      group: Large Runners
+    runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - name: Check out repository code
@@ -57,42 +50,16 @@ jobs:
           rm -rf ~/.cache/bazel/*/*/external/
         shell: bash
   test:
-    runs-on:
-      group: Large Runners
-    timeout-minutes: 20
-    steps:
-      - name: Check out repository code
-        uses: actions/checkout@v3
-      - name: Install Java 17
-        uses: actions/setup-java@v3
-        with:
-          distribution: 'zulu'
-          java-version: '17'
-      - name: 'Cache Bazel files'
-        uses: actions/cache@v3
-        with:
-          path: ~/.cache/bazel
-          key: ${{ runner.os }}-${{ env.cache-version }}-bazel-test-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-${{ env.cache-version }}-bazel-test-
-      - name: Run Robolectric tests
-        run: bazelisk test --test_tag_filters=robolectric --build_tag_filters=robolectric --test_output=all ...
-        shell: bash
-      - name: 'Clean bazel cache'
-        # Don't cache the bazel/external directory, since it can be  > 2GB
-        # and is expensive to restore and save
-        # According to the documentation, we should be able to exclude these via
-        # the actions/cache path, e.g. "!~/.cache/bazel/*/*/external/" but that
-        # doesn't seem to work.
-        run: |
-          rm -rf $(bazel info repository_cache)
-          rm -rf ~/.cache/bazel/*/*/external/
-        shell: bash
-  gradle-emulator-test:
-    runs-on:
-      group: Large Runners
+    strategy:
+      fail-fast: false
+      matrix:
+        agpVersion: ['8.3.0-alpha18','8.2.0']
+        # agpVersion: ['8.3.0-alpha18']
+        counter1: [0,1,2,3,4,5,6,7,8,9]
+        counter2: [0,1,2,3,4,5,6,7,8,9]
+    runs-on: macos-latest
     needs: build
-    timeout-minutes: 20
+    timeout-minutes: 40
     steps:
       - name: Check out repository code
         uses: actions/checkout@v3
@@ -101,13 +68,6 @@ jobs:
         with:
           distribution: 'zulu'
           java-version: '17'
-      - name: Enable KVM group perms
-        run: |
-            echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
-            sudo udevadm control --reload-rules
-            sudo udevadm trigger --name-match=kvm       
-      - name: 'Cache Gradle files'
-        uses: gradle/gradle-build-action@v2
       - name: 'Download local snapshot for tests'
         uses: actions/download-artifact@v3
         with:
@@ -123,13 +83,19 @@ jobs:
       - name: 'Run gradle tests'
         run: |
           cd ${{ github.workspace }}/gradle-tests
-          ./gradlew nexusOneDebugAndroidTest -Pandroid.testoptions.manageddevices.emulator.gpu="swiftshader_indirect" --no-watch-fs --stacktrace
+          ./gradlew nexusOneDebugAndroidTest \
+            -Pandroid.testoptions.manageddevices.emulator.gpu="swiftshader_indirect" \
+            -Pandroid.experimental.testOptions.managedDevices.maxConcurrentDevices=1 \
+            --no-watch-fs --stacktrace \
+            -Pandroid.experimental.testOptions.managedDevices.emulator.showKernelLogging=true \
+            -PAGP_VERSION="${{ matrix.agpVersion }}"
         shell: bash
       - name: 'Upload test reports'
-        if: success() || failure()
+        if: always()
+        continue-on-error: true
         uses: actions/upload-artifact@v3
         with:
-          name: test-reports
-          path: gradle-tests/**/build/reports/androidTests/
-
-
+          name: test-reports-${{ matrix.agpVersion }}-Run${{ matrix.counter1 }}${{ matrix.counter2 }}
+          path: |
+            gradle-tests/**/build/outputs/androidTest-results/
+            gradle-tests/**/build/reports/androidTests/

@@ -101,7 +101,7 @@ public final class RootViewPicker implements Provider<View> {
    * root view is not being requested and the root view has window focus or is focusable.
    */
   private Root waitForRootToBeReady(Root pickedRoot) {
-    long timeout = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(10) /* 10 seconds */;
+    long timeout = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(30) /* 30 seconds */;
     BackOff rootReadyBackoff = new RootReadyBackoff();
     while (System.currentTimeMillis() <= timeout) {
       if (pickedRoot.isReady()) {
@@ -116,7 +116,7 @@ public final class RootViewPicker implements Provider<View> {
         String.format(
             Locale.ROOT,
             "Waited for the root of the view hierarchy to have "
-                + "window focus and not request layout for 10 seconds. If you specified a non "
+                + "window focus and not request layout for 30 seconds. If you specified a non "
                 + "default root matcher, it may be picking a root that never takes focus. "
                 + "Root:\n%s",
             pickedRoot));
