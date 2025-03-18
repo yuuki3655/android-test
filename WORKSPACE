@@ -9,7 +9,9 @@ RULES_JVM_EXTERNAL_SHA = "b17d7388feb9bfa7f2fa09031b32707df529f26c91ab9e5d909eb1
 
 # These need needs to be consistent with their counterparts in build_extensions/axt_deps_versions.bzl.
 KOTLIN_VERSION = "1.8.20"
-KOTLINX_COROUTINES_VERSION = "1.7.1" 
+
+KOTLINX_COROUTINES_VERSION = "1.7.1"
+
 GRPC_VERSION = "1.54.1"
 
 # Get from https://github.com/JetBrains/kotlin/releases/
@@ -31,12 +33,14 @@ http_archive(
         "https://github.com/bazelbuild/rules_proto/archive/refs/tags/5.3.0-21.7.tar.gz",
     ],
 )
+
 load("@rules_proto//proto:repositories.bzl", "rules_proto_dependencies", "rules_proto_toolchains")
+
 rules_proto_dependencies()
+
 rules_proto_toolchains()
 
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
-
 load("@rules_jvm_external//:defs.bzl", "maven_install")
 load("@rules_jvm_external//:specs.bzl", "maven")
 load(
@@ -156,6 +160,20 @@ maven_install(
         "javax.inject:javax.inject:1",
         "joda-time:joda-time:2.10.1",
         "junit:junit:" + JUNIT_VERSION,
+        maven.artifact(
+            "org.junit.platform",
+            "junit-platform-launcher",
+            "1.11.0-SNAPSHOT",
+            neverlink = True,
+        ),
+        maven.artifact(
+            "org.junit.platform",
+            "junit-platform-engine",
+            "1.11.0-SNAPSHOT",
+            neverlink = True,
+        ),
+        #        "org.junit.platform:junit-platform-launcher:1.10.1",
+        #        "org.junit.platform:junit-platform-engine:1.10.1",
         "net.bytebuddy:byte-buddy-agent:1.9.10",
         "net.bytebuddy:byte-buddy:1.9.10",
         "net.sf.kxml:kxml2:jar:2.3.0",
@@ -185,6 +203,7 @@ maven_install(
     fetch_sources = True,
     generate_compat_repositories = True,
     repositories = [
+        "file:///usr/local/google/home/hummer/.m2/repository",
         "https://maven.google.com",
         "https://repo1.maven.org/maven2",
         "https://dl.bintray.com/linkedin/maven",
@@ -209,6 +228,7 @@ android_sdk_repository(
     name = "androidsdk",
     api_level = 34,
     build_tools_version = "33.0.2",
+    path = "/usr/local/google/home/hummer/Android/Sdk",
 )
 
 load("//:repo.bzl", "android_test_repositories")
@@ -222,6 +242,7 @@ robolectric_repositories()
 # Kotlin toolchains
 
 rules_kotlin_version = "1.8-RC-12"
+
 rules_kotlin_sha = "8e5c8ab087e0fa3fbb58e1f6b99d8fe40f75bac44994c3d208eba723284465d6"
 
 http_archive(

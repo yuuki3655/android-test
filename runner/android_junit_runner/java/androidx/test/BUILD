@@ -23,6 +23,12 @@ package_group(
 
 licenses(["notice"])
 
+java_library(
+    name = "runner_res",
+    resource_strip_prefix = "runner/android_junit_runner/java/androidx/test/res",
+    resources = glob(["res/**"]),
+)
+
 android_library(
     name = "runner",
     srcs = glob(
@@ -38,6 +44,7 @@ android_library(
         "//runner/monitor",
     ],
     deps = [
+        ":runner_res",
         "//annotation",
         "//opensource/androidx:annotation",
         "//runner/monitor",
@@ -46,6 +53,9 @@ android_library(
         "@androidsdk//:legacy_test-30",
         "@maven//:androidx_tracing_tracing",
         "@maven//:junit_junit",
+        "@maven//:org_junit_platform_junit_platform_commons",
+        "@maven//:org_junit_platform_junit_platform_engine",
+        "@maven//:org_junit_platform_junit_platform_launcher",
     ],
 )
 

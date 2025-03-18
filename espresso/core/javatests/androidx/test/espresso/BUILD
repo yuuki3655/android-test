@@ -28,6 +28,7 @@ android_library(
         "//opensource/androidx:annotation",
         "//runner/monitor",
         "@maven//:org_hamcrest_hamcrest_core",
+        "@maven//:org_jetbrains_kotlin_kotlin_stdlib",
     ],
 )
 
